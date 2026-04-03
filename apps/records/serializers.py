@@ -39,21 +39,20 @@ class RecordSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         username = attrs.get("username")
 
-        if request and request.method == "POST":
-            if request.user.role == "admin":
-                if not username:
-                    raise serializers.ValidationError(
-                        {"username": "Username is required for admin record creation."}
-                    )
+        if request and request.method == "POST" and request.user.role == "admin":
+            if not username:
+                raise serializers.ValidationError(
+                    {"username": ["Username is required for admin record creation."]}
+                )
 
-                try:
-                    user = User.objects.get(username=username)
-                except User.DoesNotExist:
-                    raise serializers.ValidationError(
-                        {"username": "User with this username does not exist."}
-                    )
+            try:
+                user = User.objects.get(username__iexact=username.strip())
+            except User.DoesNotExist:
+                raise serializers.ValidationError(
+                    {"username": ["User with this username does not exist."]}
+                )
 
-                attrs["target_user"] = user
+            attrs["target_user"] = user
 
         return attrs
 

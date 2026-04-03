@@ -1,9 +1,8 @@
 from django.urls import path
-from .views import UserManagementView,UserListView, UpdateUserRoleView, ToggleUserStatusView
+from .views import UserListView, UpdateUserRoleView, ToggleUserStatusView
 
 urlpatterns = [
-    path("user-management/", UserManagementView.as_view(), name="user-management"),
-    path("users/", UserListView.as_view()),
-    path("users/<int:user_id>/role/", UpdateUserRoleView.as_view()),
-    path("users/<int:user_id>/status/", ToggleUserStatusView.as_view()),
+    path("", UserListView.as_view(), name="user-list"),
+    path("<int:user_id>/role/", UpdateUserRoleView.as_view(), name="update-user-role"),
+    path("<int:user_id>/status/", ToggleUserStatusView.as_view(), name="toggle-user-status"),
 ]

@@ -2,6 +2,7 @@ from decimal import Decimal
 
 from django.db.models import Avg, Case, DecimalField, Sum, When
 from django.db.models.functions import TruncMonth
+from rest_framework.exceptions import ValidationError
 
 from apps.records.models import Record
 from apps.users.models import User
@@ -26,19 +27,28 @@ class InsightsService:
         if user.role == "analyst":
             records = Record.objects.filter(user=user)
 
+            if username:
+                raise ValidationError(
+                    {"username": ["Analysts are not allowed to filter by username."]}
+                )
+
         elif user.role == "admin":
             records = Record.objects.all()
 
             if username:
                 try:
-                    target_user = User.objects.get(username=username)
+                    target_user = User.objects.get(username__iexact=username.strip())
                 except User.DoesNotExist:
-                    return None, "User with this username does not exist."
+                    raise ValidationError(
+                        {"username": ["User with this username does not exist."]}
+                    )
 
                 records = records.filter(user=target_user)
 
         else:
-            return None, "You are not allowed to access insights."
+            raise ValidationError(
+                {"detail": ["You are not allowed to access insights."]}
+            )
 
         if start_date:
             records = records.filter(date__gte=start_date)
@@ -52,7 +62,7 @@ class InsightsService:
         if record_type:
             records = records.filter(record_type=record_type)
 
-        return records, None
+        return records
 
     @staticmethod
     def get_total_by_type(records, record_type):
@@ -146,10 +156,7 @@ class InsightsService:
 
     @classmethod
     def build_insights_data(cls, user, query_params):
-        records, error_message = cls.get_filtered_records(user, query_params)
-
-        if error_message:
-            return None, error_message
+        records = cls.get_filtered_records(user, query_params)
 
         record_type = query_params.get("record_type")
         summary_data = cls.get_summary_data(records)
@@ -170,4 +177,4 @@ class InsightsService:
             data["category_breakdown"] = cls.get_category_breakdown(records)
             data["top_expense_categories"] = cls.get_top_expense_categories(records)
 
-        return data, None
+        return data

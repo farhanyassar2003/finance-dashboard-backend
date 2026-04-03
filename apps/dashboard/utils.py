@@ -1,5 +1,4 @@
 from datetime import datetime
-
 from rest_framework.exceptions import ValidationError
 
 from apps.records.models import Record
@@ -10,7 +9,7 @@ def parse_date(date_string, field_name):
         return datetime.strptime(date_string, "%Y-%m-%d").date()
     except (TypeError, ValueError):
         raise ValidationError(
-            {field_name: "Date must be in YYYY-MM-DD format."}
+            {field_name: ["Date must be in YYYY-MM-DD format."]}
         )
 
 
@@ -29,7 +28,7 @@ def validate_and_get_dates(query_params):
 
     if start_date and end_date and start_date > end_date:
         raise ValidationError(
-            {"date_range": "start_date cannot be greater than end_date."}
+            {"date_range": ["start_date cannot be greater than end_date."]}
         )
 
     return start_date, end_date
@@ -44,9 +43,9 @@ def validate_record_type(record_type):
     if record_type not in valid_record_types:
         raise ValidationError(
             {
-                "record_type": (
+                "record_type": [
                     f"record_type must be one of: {', '.join(valid_record_types)}."
-                )
+                ]
             }
         )
 
@@ -62,9 +61,9 @@ def validate_category(category):
     if category not in valid_categories:
         raise ValidationError(
             {
-                "category": (
+                "category": [
                     f"category must be one of: {', '.join(valid_categories)}."
-                )
+                ]
             }
         )
 
