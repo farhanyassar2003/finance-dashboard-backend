@@ -1,19 +1,20 @@
 from decimal import Decimal
 from django.db.models import Sum
+from django.db.models.functions import TruncMonth
 
 from apps.records.models import Record
 from apps.dashboard.serializers import RecentTransactionSerializer
-from apps.dashboard.utils import validate_and_get_dates
 
 
 class DashboardService:
     RECENT_TRANSACTIONS_LIMIT = 5
 
     @classmethod
-    def get_filtered_records(cls, user, query_params):
+    def get_filtered_records(cls, user, validated_data):
         records = Record.objects.filter(user=user)
 
-        start_date, end_date = validate_and_get_dates(query_params)
+        start_date = validated_data.get("start_date")
+        end_date = validated_data.get("end_date")
 
         if start_date:
             records = records.filter(date__gte=start_date)
@@ -28,6 +29,7 @@ class DashboardService:
         total = records.filter(record_type=record_type).aggregate(
             total=Sum("amount")
         )["total"]
+
         return total or Decimal("0.00")
 
     @classmethod
@@ -42,6 +44,46 @@ class DashboardService:
             "balance": total_income - total_expense,
         }
 
+    @staticmethod
+    def get_category_breakdown(records):
+        category_data = (
+            records.values("category")
+            .annotate(total=Sum("amount"))
+            .order_by("category")
+        )
+
+        return {
+            item["category"]: item["total"] or Decimal("0.00")
+            for item in category_data
+        }
+
+    @staticmethod
+    def get_monthly_trend(records):
+        trend_queryset = (
+            records.annotate(month=TruncMonth("date"))
+            .values("month", "record_type")
+            .annotate(total=Sum("amount"))
+            .order_by("month")
+        )
+
+        monthly_data = {}
+
+        for item in trend_queryset:
+            month_key = item["month"].strftime("%Y-%m")
+            if month_key not in monthly_data:
+                monthly_data[month_key] = {
+                    "month": month_key,
+                    "income": Decimal("0.00"),
+                    "expense": Decimal("0.00"),
+                }
+
+            if item["record_type"] == "income":
+                monthly_data[month_key]["income"] = item["total"] or Decimal("0.00")
+            elif item["record_type"] == "expense":
+                monthly_data[month_key]["expense"] = item["total"] or Decimal("0.00")
+
+        return list(monthly_data.values())
+
     @classmethod
     def get_recent_transactions(cls, records):
         recent_transactions = records.order_by("-date", "-id")[
@@ -51,10 +93,12 @@ class DashboardService:
         return serializer.data
 
     @classmethod
-    def build_dashboard_data(cls, user, query_params):
-        records = cls.get_filtered_records(user, query_params)
+    def build_dashboard_data(cls, user, validated_data):
+        records = cls.get_filtered_records(user, validated_data)
 
         return {
             **cls.get_summary_data(records),
+            "category_breakdown": cls.get_category_breakdown(records),
+            "monthly_trend": cls.get_monthly_trend(records),
             "recent_transactions": cls.get_recent_transactions(records),
         }

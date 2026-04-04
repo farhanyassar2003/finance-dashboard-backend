@@ -4,6 +4,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 
 from apps.users.permissions import IsViewerOrAbove
+from apps.dashboard.serializers import DashboardFilterSerializer
 from apps.dashboard.services.dashboard_service import DashboardService
 
 
@@ -11,9 +12,12 @@ class DashboardView(APIView):
     permission_classes = [IsAuthenticated, IsViewerOrAbove]
 
     def get(self, request):
+        filter_serializer = DashboardFilterSerializer(data=request.query_params)
+        filter_serializer.is_valid(raise_exception=True)
+
         dashboard_data = DashboardService.build_dashboard_data(
             user=request.user,
-            query_params=request.query_params,
+            validated_data=filter_serializer.validated_data,
         )
 
         return Response(
@@ -21,6 +25,7 @@ class DashboardView(APIView):
                 "message": "Dashboard fetched successfully.",
                 "username": request.user.username,
                 "role": request.user.role,
+                "filters": filter_serializer.validated_data,
                 "data": dashboard_data,
             },
             status=status.HTTP_200_OK,

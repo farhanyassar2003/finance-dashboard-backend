@@ -7,7 +7,7 @@ from rest_framework import status
 from rest_framework.exceptions import PermissionDenied
 
 from .permissions import IsAdminRole
-from .serializers import UserListSerializer, UpdateUserRoleSerializer
+from .serializers import UserListSerializer, UpdateUserRoleSerializer,AdminCreateUserSerializer
 
 User = get_user_model()
 
@@ -26,6 +26,31 @@ class UserListView(APIView):
                 "data": serializer.data,
             },
             status=status.HTTP_200_OK,
+        )
+
+class AdminCreateUserView(APIView):
+    permission_classes = [IsAdminRole]
+
+    def post(self, request):
+        serializer = AdminCreateUserSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+
+        return Response(
+            {
+                "message": "User created successfully by admin.",
+                "data": {
+                    "id": user.id,
+                    "first_name": user.first_name,
+                    "last_name": user.last_name,
+                    "username": user.username,
+                    "email": user.email,
+                    "role": user.role,
+                    "department": user.department,
+                    "is_active": user.is_active,
+                },
+            },
+            status=status.HTTP_201_CREATED,
         )
 
 

@@ -6,38 +6,32 @@ from rest_framework.exceptions import ValidationError
 
 from apps.records.models import Record
 from apps.users.models import User
-from apps.dashboard.utils import (
-    validate_and_get_dates,
-    validate_category,
-    validate_record_type,
-)
 
 
 class InsightsService:
     TOP_EXPENSE_CATEGORIES_LIMIT = 5
 
     @staticmethod
-    def get_filtered_records(user, query_params):
-        username = query_params.get("username")
-        start_date, end_date = validate_and_get_dates(query_params)
-
-        category = validate_category(query_params.get("category"))
-        record_type = validate_record_type(query_params.get("record_type"))
+    def get_filtered_records(user, validated_data):
+        username = validated_data.get("username")
+        start_date = validated_data.get("start_date")
+        end_date = validated_data.get("end_date")
+        category = validated_data.get("category")
+        record_type = validated_data.get("record_type")
 
         if user.role == "analyst":
-            records = Record.objects.filter(user=user)
-
             if username:
                 raise ValidationError(
                     {"username": ["Analysts are not allowed to filter by username."]}
                 )
+            records = Record.objects.filter(user=user)
 
         elif user.role == "admin":
             records = Record.objects.all()
 
             if username:
                 try:
-                    target_user = User.objects.get(username__iexact=username.strip())
+                    target_user = User.objects.get(username__iexact=username)
                 except User.DoesNotExist:
                     raise ValidationError(
                         {"username": ["User with this username does not exist."]}
@@ -78,10 +72,10 @@ class InsightsService:
         )["avg"]
         return average or Decimal("0.00")
 
-    @staticmethod
-    def get_summary_data(records):
-        total_income = InsightsService.get_total_by_type(records, "income")
-        total_expense = InsightsService.get_total_by_type(records, "expense")
+    @classmethod
+    def get_summary_data(cls, records):
+        total_income = cls.get_total_by_type(records, "income")
+        total_expense = cls.get_total_by_type(records, "expense")
 
         return {
             "total_records": records.count(),
@@ -143,7 +137,7 @@ class InsightsService:
             records.filter(record_type="expense")
             .values("category")
             .annotate(total=Sum("amount"))
-            .order_by("-total")[:cls.TOP_EXPENSE_CATEGORIES_LIMIT]
+            .order_by("-total", "category")[:cls.TOP_EXPENSE_CATEGORIES_LIMIT]
         )
 
         return [
@@ -155,10 +149,9 @@ class InsightsService:
         ]
 
     @classmethod
-    def build_insights_data(cls, user, query_params):
-        records = cls.get_filtered_records(user, query_params)
-
-        record_type = query_params.get("record_type")
+    def build_insights_data(cls, user, validated_data):
+        records = cls.get_filtered_records(user, validated_data)
+        record_type = validated_data.get("record_type")
         summary_data = cls.get_summary_data(records)
 
         data = {
