@@ -108,7 +108,7 @@ class RecordDetailView(APIView):
             context={"request": request},
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save(user=record.user)
+        serializer.save()
 
         return Response(
             {
@@ -127,7 +127,7 @@ class RecordDetailView(APIView):
             context={"request": request},
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save(user=record.user)
+        serializer.save()
 
         return Response(
             {
