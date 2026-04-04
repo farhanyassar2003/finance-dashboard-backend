@@ -65,3 +65,69 @@ class RecordSerializer(serializers.ModelSerializer):
             user = request.user
 
         return Record.objects.create(user=user, **validated_data)
+
+
+class RecordFilterSerializer(serializers.Serializer):
+    category = serializers.ChoiceField(
+        choices=Record.CATEGORY_CHOICES,
+        required=False
+    )
+    record_type = serializers.ChoiceField(
+        choices=Record.RECORD_TYPE_CHOICES,
+        required=False
+    )
+    date = serializers.DateField(
+        required=False,
+        input_formats=["%Y-%m-%d"]
+    )
+    start_date = serializers.DateField(
+        required=False,
+        input_formats=["%Y-%m-%d"]
+    )
+    end_date = serializers.DateField(
+        required=False,
+        input_formats=["%Y-%m-%d"]
+    )
+    amount_min = serializers.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        required=False
+    )
+    amount_max = serializers.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        required=False
+    )
+
+    def validate_amount_min(self, value):
+        if value < 0:
+            raise serializers.ValidationError("Amount minimum must be 0 or greater.")
+        return value
+
+    def validate_amount_max(self, value):
+        if value < 0:
+            raise serializers.ValidationError("Amount maximum must be 0 or greater.")
+        return value
+
+    def validate(self, attrs):
+        start_date = attrs.get("start_date")
+        end_date = attrs.get("end_date")
+        amount_min = attrs.get("amount_min")
+        amount_max = attrs.get("amount_max")
+
+        errors = {}
+
+        if start_date and end_date and start_date > end_date:
+            errors["date_range"] = ["start_date cannot be later than end_date."]
+
+        if (
+            amount_min is not None
+            and amount_max is not None
+            and amount_min > amount_max
+        ):
+            errors["amount_range"] = ["amount_min cannot be greater than amount_max."]
+
+        if errors:
+            raise serializers.ValidationError(errors)
+
+        return attrs

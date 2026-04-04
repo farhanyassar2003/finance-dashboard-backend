@@ -105,6 +105,16 @@ class RegisterSerializer(serializers.ModelSerializer):
         return value
 
     def validate(self, attrs):
+        allowed_fields = set(self.fields.keys())
+        received_fields = set(self.initial_data.keys())
+
+        extra_fields = received_fields - allowed_fields
+
+        if extra_fields:
+            raise serializers.ValidationError(
+                {field: ["This field is not allowed."] for field in extra_fields}
+            )
+
         if "role" in self.initial_data:
             raise serializers.ValidationError(
                 {"role": ["You are not allowed to set role during registration."]}

@@ -1,15 +1,13 @@
-from datetime import datetime
-
 from django.shortcuts import get_object_or_404
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.exceptions import ValidationError, NotFound
+from rest_framework.exceptions import NotFound
 
 from .models import Record
-from .serializers import RecordSerializer
+from .serializers import RecordSerializer,RecordFilterSerializer
 from apps.users.permissions import IsRecordAccessPermission
 
 
@@ -18,59 +16,52 @@ class RecordListCreateView(APIView):
 
     def get_queryset(self, request):
         if request.user.role == "admin":
-            return Record.objects.all()
-        return Record.objects.filter(user=request.user)
-
-    def validate_filters(self, request):
-        category = request.query_params.get("category")
-        record_type = request.query_params.get("record_type")
-        date = request.query_params.get("date")
-
-        if category and category not in dict(Record.CATEGORY_CHOICES):
-            raise ValidationError(
-                {"category": ["Invalid category."]}
-            )
-
-        if record_type and record_type not in dict(Record.RECORD_TYPE_CHOICES):
-            raise ValidationError(
-                {"record_type": ["Invalid record type."]}
-            )
-
-        if date:
-            try:
-                datetime.strptime(date, "%Y-%m-%d")
-            except ValueError:
-                raise ValidationError(
-                    {"date": ["Date must be in YYYY-MM-DD format."]}
-                )
-
-        return category, record_type, date
+            return Record.objects.all().order_by("-date", "-created_at")
+        return Record.objects.filter(user=request.user).order_by("-date", "-created_at")
 
     def get(self, request):
         records = self.get_queryset(request)
-        category, record_type, date = self.validate_filters(request)
 
-        if category:
-            records = records.filter(category=category)
+        filter_serializer = RecordFilterSerializer(data=request.query_params)
+        filter_serializer.is_valid(raise_exception=True)
+        filters = filter_serializer.validated_data
 
-        if record_type:
-            records = records.filter(record_type=record_type)
+        if "category" in filters:
+            records = records.filter(category=filters["category"])
 
-        if date:
-            records = records.filter(date=date)
+        if "record_type" in filters:
+            records = records.filter(record_type=filters["record_type"])
+
+        if "date" in filters:
+            records = records.filter(date=filters["date"])
+
+        if "amount_min" in filters:
+            records = records.filter(amount__gte=filters["amount_min"])
+
+        if "amount_max" in filters:
+            records = records.filter(amount__lte=filters["amount_max"])
+
+        if "start_date" in filters:
+            records = records.filter(date__gte=filters["start_date"])
+
+        if "end_date" in filters:
+            records = records.filter(date__lte=filters["end_date"])
 
         serializer = RecordSerializer(records, many=True)
         return Response(
             {
                 "message": "Records fetched successfully.",
-                "count": len(serializer.data),
+                "count": records.count(),
                 "data": serializer.data,
             },
             status=status.HTTP_200_OK,
         )
 
     def post(self, request):
-        serializer = RecordSerializer(data=request.data, context={"request": request})
+        serializer = RecordSerializer(
+            data=request.data,
+            context={"request": request}
+        )
         serializer.is_valid(raise_exception=True)
         record = serializer.save()
 
@@ -82,7 +73,6 @@ class RecordListCreateView(APIView):
             },
             status=status.HTTP_201_CREATED,
         )
-
 
 class RecordDetailView(APIView):
     permission_classes = [IsAuthenticated, IsRecordAccessPermission]

@@ -4,7 +4,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import PermissionDenied
 
 from .permissions import IsAdminRole
 from .serializers import UserListSerializer, UpdateUserRoleSerializer
@@ -36,7 +36,7 @@ class UpdateUserRoleView(APIView):
         user = get_object_or_404(User, id=user_id)
 
         if request.user.id == user.id:
-            raise ValidationError({"detail": "You cannot change your own role."})
+            raise PermissionDenied("You cannot change your own role.")
 
         serializer = UpdateUserRoleSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -64,9 +64,7 @@ class ToggleUserStatusView(APIView):
         user = get_object_or_404(User, id=user_id)
 
         if request.user.id == user.id:
-            raise ValidationError(
-                {"detail": "You cannot change your own active status."}
-            )
+            raise PermissionDenied("You cannot change your own active status.")
 
         user.is_active = not user.is_active
         user.save(update_fields=["is_active", "updated_at"])
