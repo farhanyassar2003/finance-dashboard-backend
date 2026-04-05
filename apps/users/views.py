@@ -5,6 +5,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.exceptions import PermissionDenied
+from rest_framework.permissions import IsAuthenticated
 
 from .permissions import IsAdminRole
 from config.pagination import StandardPagination
@@ -14,36 +15,40 @@ User = get_user_model()
 
 
 class UserListView(APIView):
-    permission_classes = [IsAdminRole]
+    permission_classes = [IsAdminRole,IsAuthenticated]
 
     def get(self, request):
         filter_serializer = UserListFilterSerializer(data=request.query_params)
         filter_serializer.is_valid(raise_exception=True)
 
         filters = filter_serializer.validated_data
-        users = User.objects.all()
+        users = User.objects.all().order_by("id")
 
-        if "username" in filters:
-            users = users.filter(username__icontains=filters["username"])
+        username = filters.get("username")
+        role = filters.get("role")
+        department = filters.get("department")
+        is_active = filters.get("is_active", None)
 
-        if "role" in filters:
-            users = users.filter(role=filters["role"])
+        if username:
+            users = users.filter(username__icontains=username)
 
-        if "department" in filters:
-            users = users.filter(department=filters["department"])
+        if role:
+            users = users.filter(role=role)
 
-        if "is_active" in filters:
-            users = users.filter(is_active=filters["is_active"])
+        if department:
+            users = users.filter(department=department)
+
+        if is_active is not None:
+            users = users.filter(is_active=is_active)
 
         paginator = StandardPagination()
         paginated_users = paginator.paginate_queryset(users, request)
-
         serializer = UserListSerializer(paginated_users, many=True)
 
         return paginator.get_paginated_response(
             serializer.data,
             message="Users fetched successfully."
-            )
+        )
         
 class AdminCreateUserView(APIView):
     permission_classes = [IsAdminRole]

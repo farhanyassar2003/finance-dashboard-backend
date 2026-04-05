@@ -116,11 +116,26 @@ Analytics logic is implemented using:
 ### Register User
 `POST /api/register/`
 
+**Validations:**
+- First and last names must contain only letters.
+- Username must be alphanumeric with underscores, between 4-150 characters.
+- Username and email uniqueness checks.
+- Strong password policy: Minimum 8 characters, at least one uppercase, one lowercase, one number, and one special character. No spaces allowed.
+- Password mismatch rejection.
+- Role and department assignment blocked during registration.
+- Strict invalid-field rejection.
+
 New users are assigned the default role: `viewer`.
 Role assignment can only be modified through admin APIs.
 
 ### Login
 `POST /api/login/`
+
+**Validations:**
+- Username and password are required.
+- Strict invalid-field rejection.
+- Validates user existence and password correctness.
+- Inactive-user login blocking.
 
 Returns:
 - user details
@@ -222,10 +237,22 @@ Base path: `/api/users/`
 *Note: Admins cannot change their own role or deactivate their own account.*
 
 ### User Filtering
-Supported filters:
+Supported filters: `role`, `department`, `is_active`, `username`
+
+Examples:
 - `/api/users/?role=analyst`
 - `/api/users/?department=finance`
 - `/api/users/?is_active=true`
+- `/api/users/?username=john`
+
+### User Validations
+- First name and last name must contain only letters if provided.
+- Username must be at least 4 characters long.
+- Duplicate username and email prevention.
+- Strong password policy: Must contain uppercase, lowercase, number, special character, and no spaces.
+- Passwords mismatch rejection.
+- Admin role restriction: Admins cannot change their own role or deactivate their own account.
+- Strict invalid-field rejection.
 
 ---
 
@@ -267,7 +294,15 @@ Supported filters: `category`, `record_type`, `date`, `start_date`, `end_date`, 
 
 Example: `/api/records/?category=food&record_type=expense`
 
-Includes: strict validation, duplicate prevention, ownership protection, future-date blocking, invalid-field rejection.
+### Records Validations
+- **Title**: Cannot be empty.
+- **Amount**: Must be greater than 0.
+- **Date**: Future-date blocking (cannot be in the future).
+- **Ownership protection**: Changing record ownership is not allowed. Read-only fields cannot be altered.
+- **Duplicate prevention**: Cannot create duplicate records with the exact same details for a user.
+- **Admin-only creation**: Requires target user `username` which must exist.
+- **Filter validation**: `start_date` <= `end_date`, `amount_min` / `max` >= 0, `amount_min` <= `amount_max`.
+- **Invalid-field rejection**: Strict validation rejecting any unallowed parameters.
 
 ---
 
@@ -294,11 +329,28 @@ Endpoint: `GET /api/dashboard/`
 Access: `viewer`, `analyst`, `admin`
 
 Provides:
-- `total_records`, `total_income`, `total_expense`, `balance`
+- `total_records` (number of records in the filtered dataset)
+- `total_income` (sum of income records)
+- `total_expense` (sum of expense records)
+- `balance` (total_income − total_expense)
 - `category_breakdown`, `monthly_trend`, `weekly_trend`
-- `recent_transactions`
+- `recent_transactions` (latest 5 transactions ordered by date)
 
-Supports filters: `start_date`, `end_date`  
+**Supported filters:** `start_date`, `end_date`, `username` (admin only)
+
+
+## Role-Based Dashboard Scope
+
+| Role | Data Scope |
+|------|-----------|
+| **Viewer** | Own summary |
+| **Analyst** | Own summary |
+| **Admin** | System-wide summary |
+
+**Validations:**
+- `start_date` cannot be greater than `end_date`
+- strict invalid-field rejection
+
 Implemented using: `DashboardService`
 
 ---
@@ -308,13 +360,30 @@ Endpoint: `GET /api/insights/`
 Access: `analyst`, `admin`
 
 Provides:
-- `total_records`, `balance`, `total_income`, `average_income`
-- `total_expense`, `average_expense`, `monthly_trend`, `weekly_trend`
-- `category_breakdown`, `top_expense_categories`
+- `total_records` (number of records in the filtered dataset)
+- `balance` (total_income − total_expense)
+- `total_income` (sum of income records)
+- `average_income` (average value of income records)
+- `total_expense` (sum of expense records)
+- `average_expense` (average value of expense records)
+- `monthly_trend`, `weekly_trend`
+- `category_breakdown` (expense category distribution)
+- `top_expense_categories` (top expense categories by total amount)
 
-Supported filters:
-- `start_date`, `end_date`, `category`, `record_type`
-- `username` (admin only)
+**Supported filters:** `start_date`, `end_date`, `category`, `record_type`, `username` (admin only)
+
+
+## Role-Based Insights Scope
+
+| Role | Data Scope |
+|------|-----------|
+| **Analyst** | Own insights summary |
+| **Admin** | System-wide insights summary |
+
+**Validations:**
+- `start_date` cannot be greater than `end_date`
+- username formatting (trims extra spaces before validation)
+- strict invalid-field rejection
 
 Implemented using: `InsightsService`
 
@@ -329,21 +398,11 @@ Implemented using: `InsightsService`
 | **Recent transactions**| Included | Not included |
 | **Averages** | Not included | Included |
 | **Top categories** | Not included | Included |
-| **Username filtering** | Not supported | Admin-only |
+| **Username filtering** | Admin only | Admin-only |
 | **Filtering depth** | Basic | Advanced |
 
-Dashboard is designed for monitoring.  
-Insights is designed for deeper analysis.
-
----
-
-## Role-Based Dashboard Scope
-
-| Role | Data Scope |
-|------|-----------|
-| **Viewer** | Own summary |
-| **Analyst** | Own summary |
-| **Admin** | System-wide summary |
+Dashboard is designed for monitoring overall financial activity at a glance.  
+Insights is designed for deeper analytical exploration of financial patterns and trends.
 
 ---
 
@@ -366,6 +425,23 @@ Insights is designed for deeper analysis.
 | **Admin-only record creation** | Preserves data integrity. |
 | **Refresh-token endpoint omitted** | Simplifies auth lifecycle. |
 | **Insights separated from dashboard logic**| Improves analytics clarity. |
+
+---
+
+## Additional Thoughtfulness
+
+The backend includes several design decisions beyond the core assignment requirements to improve reliability, security, and analytical clarity:
+
+- Duplicate financial record prevention to maintain data consistency
+- Ownership protection preventing reassignment of records between users
+- Immediate access revocation for inactive users even if JWT tokens are still valid using a custom authentication layer
+- Centralized global exception handling for consistent API error responses
+- Strict invalid-field rejection across filtering endpoints
+- Reusable global pagination system implemented via StandardPagination for consistent list responses
+- Custom JWT authentication extension (`authentication.py`) to enforce real-time user active-status validation
+- Service-layer-based analytics architecture using DashboardService and InsightsService
+- Expense-focused category analytics aligned with real-world financial dashboards
+- Clear separation between Dashboard (summary monitoring) and Insights (advanced analytics exploration) APIs
 
 ---
 
@@ -394,4 +470,4 @@ Possible enhancements:
 | **Data Modeling** | Structured User & Record schema |
 | **Validation & Reliability** | Strict validation everywhere |
 | **Documentation** | Structured professional README |
-| **Additional Thoughtfulness** | Duplicate prevention + access-control safeguards |
+| **Additional Thoughtfulness** | Duplicate prevention + inactive-user access blocking + service-layer analytics + global pagination |

@@ -55,7 +55,8 @@ class DashboardService:
     @staticmethod
     def get_category_breakdown(records):
         category_data = (
-            records.values("category")
+            records.filter(record_type="expense")
+            .values("category")
             .annotate(total=Sum("amount"))
             .order_by("category")
         )
@@ -124,7 +125,7 @@ class DashboardService:
 
     @classmethod
     def get_recent_transactions(cls, records):
-        recent_transactions = records.order_by("-date", "-id")[
+        recent_transactions = records.order_by("-date", "-created_at")[
             :cls.RECENT_TRANSACTIONS_LIMIT
         ]
         serializer = RecentTransactionSerializer(recent_transactions, many=True)

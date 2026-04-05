@@ -1,7 +1,6 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
-from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 
 from .serializers import RegisterSerializer,LoginSerializer
@@ -60,21 +59,3 @@ class LoginView(APIView):
             status=status.HTTP_200_OK,
         )
 
-
-class TestProtectedView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        return Response(
-            {
-                "message": "You are authenticated.",
-                "user": {
-                    "id": request.user.id,
-                    "username": request.user.username,
-                    "email": request.user.email,
-                    "role": request.user.role,
-                    "department": request.user.department,
-                },
-            },
-            status=status.HTTP_200_OK,
-        )
