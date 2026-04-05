@@ -16,19 +16,21 @@ class RegisterView(APIView):
         user = serializer.save()
 
         return Response(
-            {
-                "message": "User registered successfully.",
-                "data": {
-                    "id": user.id,
-                    "username": user.username,
-                    "email": user.email,
-                    "role": user.role,
-                    "department": user.department,
-                    "is_active": user.is_active,
-                },
-            },
-            status=status.HTTP_201_CREATED,
-        )
+        {
+            "message": "User registered successfully.",
+            "data": {
+                "id": user.id,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "username": user.username,
+                "email": user.email,
+                "role": user.role,
+                "department": user.department,
+                "is_active": user.is_active,
+            }
+        },
+        status=status.HTTP_201_CREATED,
+    )
 
 class LoginView(APIView):
     permission_classes = [AllowAny]
