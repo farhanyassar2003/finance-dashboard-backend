@@ -24,10 +24,16 @@ class UserListFilterSerializer(serializers.Serializer):
     username = serializers.CharField(required=False)
     role = serializers.ChoiceField(choices=User.ROLE_CHOICES, required=False)
     department = serializers.ChoiceField(choices=User.DEPARTMENT_CHOICES, required=False)
-    is_active = serializers.BooleanField(required=False)
+    is_active = serializers.BooleanField(required=False, allow_null=True)
     
     
 class AdminCreateUserSerializer(serializers.ModelSerializer):
+    role = serializers.ChoiceField(choices=User.ROLE_CHOICES)
+    department = serializers.ChoiceField(
+        choices=User.DEPARTMENT_CHOICES,
+        required=False,
+        allow_null=True,
+    )
     password = serializers.CharField(write_only=True, min_length=8)
     confirm_password = serializers.CharField(write_only=True, min_length=8)
 
@@ -88,9 +94,9 @@ class AdminCreateUserSerializer(serializers.ModelSerializer):
         return value
 
     def validate_password(self, value):
-        if value.isspace():
+        if " " in value:
             raise serializers.ValidationError(
-                "Password cannot contain only spaces."
+                "Password cannot contain spaces."
             )
 
         if value.lower() == value or value.upper() == value:

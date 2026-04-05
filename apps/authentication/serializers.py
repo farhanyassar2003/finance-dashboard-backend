@@ -105,40 +105,38 @@ class RegisterSerializer(serializers.ModelSerializer):
         return value
 
     def validate(self, attrs):
+        errors = {}
+
+        if "role" in self.initial_data:
+            errors["role"] = [
+                "You are not allowed to set role during registration."
+            ]
+
+        if "department" in self.initial_data:
+            errors["department"] = [
+                "You are not allowed to set department during registration."
+            ]
+
         allowed_fields = set(self.fields.keys())
         received_fields = set(self.initial_data.keys())
 
-        extra_fields = received_fields - allowed_fields
+        extra_fields = received_fields - allowed_fields - {"role", "department"}
 
         if extra_fields:
-            raise serializers.ValidationError(
+            errors.update(
                 {field: ["This field is not allowed."] for field in extra_fields}
-            )
-
-        if "role" in self.initial_data:
-            raise serializers.ValidationError(
-                {"role": ["You are not allowed to set role during registration."]}
-            )
-
-        if "department" in self.initial_data:
-            raise serializers.ValidationError(
-                {
-                    "department": [
-                        "You are not allowed to set department during registration."
-                    ]
-                }
             )
 
         password = attrs.get("password")
         confirm_password = attrs.get("confirm_password")
 
         if password != confirm_password:
-            raise serializers.ValidationError(
-                {"confirm_password": ["Passwords do not match."]}
-            )
+            errors["confirm_password"] = ["Passwords do not match."]
+
+        if errors:
+            raise serializers.ValidationError(errors)
 
         return attrs
-
     def create(self, validated_data):
         validated_data.pop("confirm_password", None)
 

@@ -338,7 +338,6 @@ Provides:
 
 **Supported filters:** `start_date`, `end_date`, `username` (admin only)
 
----
 
 ## Role-Based Dashboard Scope
 
@@ -361,18 +360,30 @@ Endpoint: `GET /api/insights/`
 Access: `analyst`, `admin`
 
 Provides:
-- `total_records`, `balance`, `total_income`, `average_income`
-- `total_expense`, `average_expense`, `monthly_trend`, `weekly_trend`
-- `category_breakdown`, `top_expense_categories`
+- `total_records` (number of records in the filtered dataset)
+- `balance` (total_income − total_expense)
+- `total_income` (sum of income records)
+- `average_income` (average value of income records)
+- `total_expense` (sum of expense records)
+- `average_expense` (average value of expense records)
+- `monthly_trend`, `weekly_trend`
+- `category_breakdown` (expense category distribution)
+- `top_expense_categories` (top expense categories by total amount)
 
-**Supported filters:**
-- `start_date`, `end_date`, `category`, `record_type`
-- `username` (admin only)
+**Supported filters:** `start_date`, `end_date`, `category`, `record_type`, `username` (admin only)
+
+
+## Role-Based Insights Scope
+
+| Role | Data Scope |
+|------|-----------|
+| **Analyst** | Own insights summary |
+| **Admin** | System-wide insights summary |
 
 **Validations:**
-- `start_date` cannot be greater than `end_date`.
-- Username formatting (strips spaces and validates input).
-- Strict invalid-field rejection.
+- `start_date` cannot be greater than `end_date`
+- username formatting (trims extra spaces before validation)
+- strict invalid-field rejection
 
 Implemented using: `InsightsService`
 
@@ -387,11 +398,11 @@ Implemented using: `InsightsService`
 | **Recent transactions**| Included | Not included |
 | **Averages** | Not included | Included |
 | **Top categories** | Not included | Included |
-| **Username filtering** | Not supported | Admin-only |
+| **Username filtering** | Admin only | Admin-only |
 | **Filtering depth** | Basic | Advanced |
 
-Dashboard is designed for monitoring.  
-Insights is designed for deeper analysis.
+Dashboard is designed for monitoring overall financial activity at a glance.  
+Insights is designed for deeper analytical exploration of financial patterns and trends.
 
 ---
 
@@ -414,6 +425,23 @@ Insights is designed for deeper analysis.
 | **Admin-only record creation** | Preserves data integrity. |
 | **Refresh-token endpoint omitted** | Simplifies auth lifecycle. |
 | **Insights separated from dashboard logic**| Improves analytics clarity. |
+
+---
+
+## Additional Thoughtfulness
+
+The backend includes several design decisions beyond the core assignment requirements to improve reliability, security, and analytical clarity:
+
+- Duplicate financial record prevention to maintain data consistency
+- Ownership protection preventing reassignment of records between users
+- Immediate access revocation for inactive users even if JWT tokens are still valid using a custom authentication layer
+- Centralized global exception handling for consistent API error responses
+- Strict invalid-field rejection across filtering endpoints
+- Reusable global pagination system implemented via StandardPagination for consistent list responses
+- Custom JWT authentication extension (`authentication.py`) to enforce real-time user active-status validation
+- Service-layer-based analytics architecture using DashboardService and InsightsService
+- Expense-focused category analytics aligned with real-world financial dashboards
+- Clear separation between Dashboard (summary monitoring) and Insights (advanced analytics exploration) APIs
 
 ---
 
@@ -442,4 +470,4 @@ Possible enhancements:
 | **Data Modeling** | Structured User & Record schema |
 | **Validation & Reliability** | Strict validation everywhere |
 | **Documentation** | Structured professional README |
-| **Additional Thoughtfulness** | Duplicate prevention + access-control safeguards |
+| **Additional Thoughtfulness** | Duplicate prevention + inactive-user access blocking + service-layer analytics + global pagination |

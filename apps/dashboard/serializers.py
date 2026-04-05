@@ -3,8 +3,25 @@ from apps.records.models import Record
 
 
 class DashboardFilterSerializer(serializers.Serializer):
+    username = serializers.CharField(required=False, allow_blank=False)
     start_date = serializers.DateField(required=False)
     end_date = serializers.DateField(required=False)
+    
+    def validate_username(self, value):
+        return value.strip()
+
+    def to_internal_value(self, data):
+        allowed_fields = {"username", "start_date", "end_date"}
+        errors = {}
+
+        for field in data.keys():
+            if field not in allowed_fields:
+                errors[field] = ["This query parameter is not allowed."]
+
+        if errors:
+            raise serializers.ValidationError(errors)
+
+        return super().to_internal_value(data)
 
     def validate(self, attrs):
         start_date = attrs.get("start_date")
@@ -87,6 +104,27 @@ class InsightsFilterSerializer(serializers.Serializer):
         required=False,
     )
     username = serializers.CharField(required=False, allow_blank=False)
+    
+    def to_internal_value(self, data):
+        allowed_fields = {
+            "start_date",
+            "end_date",
+            "category",
+            "record_type",
+            "username",
+        }
+
+        errors = {}
+
+        for field in data.keys():
+            if field not in allowed_fields:
+                errors[field] = ["This query parameter is not allowed."]
+
+        if errors:
+            raise serializers.ValidationError(errors)
+
+        return super().to_internal_value(data)
+
 
     def validate_username(self, value):
         return value.strip()

@@ -8,8 +8,7 @@ class CustomJWTAuthentication(JWTAuthentication):
 
         if not user.is_active:
             raise AuthenticationFailed(
-                "User is inactive.",
-                code="user_inactive"
+                {"non_field_errors": ["This account is inactive."]}
             )
 
         return user

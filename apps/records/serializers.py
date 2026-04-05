@@ -231,6 +231,29 @@ class RecordFilterSerializer(serializers.Serializer):
         decimal_places=2,
         required=False
     )
+    
+    def to_internal_value(self, data):
+        allowed_fields = {
+            "category",
+            "record_type",
+            "date",
+            "start_date",
+            "end_date",
+            "amount_min",
+            "amount_max",
+        }
+
+        errors = {}
+
+        for field in data.keys():
+            if field not in allowed_fields:
+                errors[field] = ["This query parameter is not allowed."]
+
+        if errors:
+            raise serializers.ValidationError(errors)
+
+        return super().to_internal_value(data)
+
 
     def validate_amount_min(self, value):
         if value < 0:
