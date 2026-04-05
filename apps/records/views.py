@@ -23,13 +23,7 @@ class RecordListCreateView(APIView):
             return Record.objects.all().order_by("-date", "-created_at")
         return Record.objects.filter(user=request.user).order_by("-date", "-created_at")
 
-    def get(self, request):
-        records = self.get_queryset(request)
-
-        filter_serializer = RecordFilterSerializer(data=request.query_params)
-        filter_serializer.is_valid(raise_exception=True)
-        filters = filter_serializer.validated_data
-
+    def apply_filters(self, records, filters):
         if "category" in filters:
             records = records.filter(category=filters["category"])
 
@@ -50,6 +44,17 @@ class RecordListCreateView(APIView):
 
         if "end_date" in filters:
             records = records.filter(date__lte=filters["end_date"])
+
+        return records
+
+    def get(self, request):
+        records = self.get_queryset(request)
+
+        filter_serializer = RecordFilterSerializer(data=request.query_params)
+        filter_serializer.is_valid(raise_exception=True)
+        filters = filter_serializer.validated_data
+
+        records = self.apply_filters(records, filters)
 
         paginator = RecordPagination()
         paginated_records = paginator.paginate_queryset(records, request)
