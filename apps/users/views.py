@@ -7,6 +7,7 @@ from rest_framework import status
 from rest_framework.exceptions import PermissionDenied
 
 from .permissions import IsAdminRole
+from config.pagination import StandardPagination
 from .serializers import UserListSerializer, UpdateUserRoleSerializer,AdminCreateUserSerializer,UserListFilterSerializer
 
 User = get_user_model()
@@ -34,17 +35,16 @@ class UserListView(APIView):
         if "is_active" in filters:
             users = users.filter(is_active=filters["is_active"])
 
-        serializer = UserListSerializer(users, many=True)
+        paginator = StandardPagination()
+        paginated_users = paginator.paginate_queryset(users, request)
 
-        return Response(
-            {
-                "message": "Users fetched successfully.",
-                "count": users.count(),
-                "data": serializer.data,
-            },
-            status=status.HTTP_200_OK,
-        )
+        serializer = UserListSerializer(paginated_users, many=True)
 
+        return paginator.get_paginated_response(
+            serializer.data,
+            message="Users fetched successfully."
+            )
+        
 class AdminCreateUserView(APIView):
     permission_classes = [IsAdminRole]
 
