@@ -81,7 +81,7 @@ Analytics logic is implemented using:
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/<your-username>/finance-dashboard-backend.git
+   git clone https://github.com/farhanyassar2003/finance-dashboard-backend
    cd finance-dashboard-backend
    ```
 
@@ -398,7 +398,7 @@ Implemented using: `InsightsService`
 | **Recent transactions**| Included | Not included |
 | **Averages** | Not included | Included |
 | **Top categories** | Not included | Included |
-| **Username filtering** | Admin only | Admin-only |
+| **Username filtering** | Admin-only | Admin-only |
 | **Filtering depth** | Basic | Advanced |
 
 Dashboard is designed for monitoring overall financial activity at a glance.  
@@ -410,7 +410,7 @@ Insights is designed for deeper analytical exploration of financial patterns and
 
 - New users start as `viewer`.
 - Only `admin`s create records.
-- `analyst`s have read-only record access.
+- `Analyst`s have read-only record access.
 - Dashboard shows user-level analytics.
 - `admin` can analyze system-wide insights.
 - Category analytics focus on `expense` records.
@@ -424,7 +424,7 @@ Insights is designed for deeper analytical exploration of financial patterns and
 | **SQLite used** | Selected for simplicity and quick local setup; architecture supports migration to PostgreSQL without structural changes. |
 | **Admin-only record creation** | Preserves data integrity. |
 | **Refresh-token endpoint omitted** | Simplifies auth lifecycle. |
-| **Insights separated from dashboard logic**| Improves analytics clarity. |
+| **Insights separated from dashboard logic**| Insights implemented using a dedicated service layer instead of a separate Django app to keep analytics modular    without unnecessary application fragmentation. |
 
 ---
 
