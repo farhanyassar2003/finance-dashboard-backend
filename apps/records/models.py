@@ -32,7 +32,7 @@ class Record(models.Model):
         validators=[MinValueValidator(0.01)]
     )
     record_type = models.CharField(max_length=10, choices=RECORD_TYPE_CHOICES)
-    category = models.CharField(max_length=30, choices=CATEGORY_CHOICES, default="other")
+    category = models.CharField(max_length=30, choices=CATEGORY_CHOICES)
     date = models.DateField()
     description = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)

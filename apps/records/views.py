@@ -2,114 +2,155 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import NotFound
+from .pagination import RecordPagination
 
 from .models import Record
-from .serializers import RecordSerializer
-from apps.users.permissions import IsAnalystOrAdmin,IsRecordAccessPermission
+from .serializers import (
+    RecordSerializer,
+    RecordFilterSerializer,
+    RecordCreateSerializer,
+    RecordUpdateSerializer,
+)
+from apps.users.permissions import IsRecordAccessPermission
 
-
-class InsightsView(APIView):
-    permission_classes=[IsAnalystOrAdmin]
-    
-    def get(self, request):
-        return Response({
-            "message": "Insights accessed successfully",
-            "username": request.user.username,
-            "role": request.user.role,
-            "insights": {
-                "top_category": "No data yet",
-                "highest_expense": 0,
-                "monthly_trend": "No data yet"
-            }
-        })
 
 class RecordListCreateView(APIView):
     permission_classes = [IsAuthenticated, IsRecordAccessPermission]
-    
-    def get(self,request):
+
+    def get_queryset(self, request):
         if request.user.role == "admin":
-            records = Record.objects.all()
-        else:
-            records = Record.objects.filter(user=request.user).order_by("-created_at")
-        category = request.query_params.get("category")
-        record_type = request.query_params.get("record_type")
-        date = request.query_params.get("date")
-        
-        if category:
-            records = records.filter(category=category)
-            
-        if record_type:
-            records = records.filter(record_type=record_type)
-            
-        if date:
-            records = records.filter(date=date)
-            
-        serializer = RecordSerializer(records, many=True)
-        return Response(serializer.data)
+            return Record.objects.all().order_by("-date", "-created_at")
+        return Record.objects.filter(user=request.user).order_by("-date", "-created_at")
+
+    def apply_filters(self, records, filters):
+        if "category" in filters:
+            records = records.filter(category=filters["category"])
+
+        if "record_type" in filters:
+            records = records.filter(record_type=filters["record_type"])
+
+        if "date" in filters:
+            records = records.filter(date=filters["date"])
+
+        if "amount_min" in filters:
+            records = records.filter(amount__gte=filters["amount_min"])
+
+        if "amount_max" in filters:
+            records = records.filter(amount__lte=filters["amount_max"])
+
+        if "start_date" in filters:
+            records = records.filter(date__gte=filters["start_date"])
+
+        if "end_date" in filters:
+            records = records.filter(date__lte=filters["end_date"])
+
+        return records
+
+    def get(self, request):
+        records = self.get_queryset(request)
+
+        filter_serializer = RecordFilterSerializer(data=request.query_params)
+        filter_serializer.is_valid(raise_exception=True)
+        filters = filter_serializer.validated_data
+
+        records = self.apply_filters(records, filters)
+
+        paginator = RecordPagination()
+        paginated_records = paginator.paginate_queryset(records, request)
+
+        serializer = RecordSerializer(paginated_records, many=True)
+
+        return paginator.get_paginated_response(
+            {
+                "message": "Records fetched successfully.",
+                "data": serializer.data,
+            }
+        )
+
     def post(self, request):
-        serializer = RecordSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save(user=request.user)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+        serializer = RecordCreateSerializer(
+            data=request.data,
+            context={"request": request},
+        )
+        serializer.is_valid(raise_exception=True)
+        record = serializer.save()
+
+        response_serializer = RecordSerializer(record)
+        return Response(
+            {
+                "message": "Record created successfully.",
+                "data": response_serializer.data,
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+
 class RecordDetailView(APIView):
     permission_classes = [IsAuthenticated, IsRecordAccessPermission]
 
     def get_object(self, pk, user):
-        try:
-            if user.role == "admin":
-                return Record.objects.get(pk=pk)
-            return Record.objects.get(pk=pk, user=user)
-        except Record.DoesNotExist:
-            return None
+        if user.role == "admin":
+            record = Record.objects.filter(pk=pk).first()
+        else:
+            record = Record.objects.filter(pk=pk, user=user).first()
+
+        if not record:
+            raise NotFound("Record not found.")
+
+        return record
 
     def get(self, request, pk):
         record = self.get_object(pk, request.user)
-        if not record:
-            return Response(
-                {"error": "Record not found."},
-                status=status.HTTP_404_NOT_FOUND
-            )
-
         serializer = RecordSerializer(record)
-        return Response(serializer.data)
+
+        return Response(
+            {
+                "message": "Record fetched successfully.",
+                "data": serializer.data,
+            },
+            status=status.HTTP_200_OK,
+        )
 
     def put(self, request, pk):
         record = self.get_object(pk, request.user)
-        if not record:
-            return Response(
-                {"error": "Record not found."},
-                status=status.HTTP_404_NOT_FOUND
-            )
+        serializer = RecordUpdateSerializer(
+            record,
+            data=request.data,
+            context={"request": request},
+        )
+        serializer.is_valid(raise_exception=True)
+        updated_record = serializer.save()
 
-        serializer = RecordSerializer(record, data=request.data)
-        if serializer.is_valid():
-            serializer.save(user=record.user)
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {
+                "message": "Record updated successfully.",
+                "data": RecordSerializer(updated_record).data,
+            },
+            status=status.HTTP_200_OK,
+        )
 
     def patch(self, request, pk):
         record = self.get_object(pk, request.user)
-        if not record:
-            return Response(
-                {"error": "Record not found."},
-                status=status.HTTP_404_NOT_FOUND
-            )
+        serializer = RecordUpdateSerializer(
+            record,
+            data=request.data,
+            partial=True,
+            context={"request": request},
+        )
+        serializer.is_valid(raise_exception=True)
+        updated_record = serializer.save()
 
-        serializer = RecordSerializer(record, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save(user=record.user)
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {
+                "message": "Record partially updated successfully.",
+                "data": RecordSerializer(updated_record).data,
+            },
+            status=status.HTTP_200_OK,
+        )
 
     def delete(self, request, pk):
         record = self.get_object(pk, request.user)
-        if not record:
-            return Response(
-                {"error": "Record not found."},
-                status=status.HTTP_404_NOT_FOUND
-            )
-
         record.delete()
+
         return Response(status=status.HTTP_204_NO_CONTENT)
