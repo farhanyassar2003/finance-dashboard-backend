@@ -329,15 +329,23 @@ Endpoint: `GET /api/dashboard/`
 Access: `viewer`, `analyst`, `admin`
 
 Provides:
-- `total_records`, `total_income`, `total_expense`, `balance`
+- `total_records` (number of records in the filtered dataset)
+- `total_income` (sum of income records)
+- `total_expense` (sum of expense records)
+- `balance` (total_income − total_expense)
 - `category_breakdown`, `monthly_trend`, `weekly_trend`
-- `recent_transactions`
+- `recent_transactions` (latest 5 transactions ordered by date)
 
-**Supported filters:** `start_date`, `end_date`  
+**Supported filters:** `start_date`, `end_date`, `username` (admin only)
+
+**Access behavior:**
+- `viewer` and `analyst` can view only their own dashboard data
+- `admin` can view system-wide dashboard analytics
+- `admin` can optionally filter dashboard data by `username`
 
 **Validations:**
-- `start_date` cannot be greater than `end_date`.
-- Strict invalid-field rejection.
+- `start_date` cannot be greater than `end_date`
+- strict invalid-field rejection
 
 Implemented using: `DashboardService`
 
