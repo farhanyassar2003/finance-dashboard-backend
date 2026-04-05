@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import NotFound
+from .pagination import RecordPagination
 
 from .models import Record
 from .serializers import (
@@ -50,14 +51,16 @@ class RecordListCreateView(APIView):
         if "end_date" in filters:
             records = records.filter(date__lte=filters["end_date"])
 
-        serializer = RecordSerializer(records, many=True)
-        return Response(
+        paginator = RecordPagination()
+        paginated_records = paginator.paginate_queryset(records, request)
+
+        serializer = RecordSerializer(paginated_records, many=True)
+
+        return paginator.get_paginated_response(
             {
                 "message": "Records fetched successfully.",
-                "count": records.count(),
                 "data": serializer.data,
-            },
-            status=status.HTTP_200_OK,
+            }
         )
 
     def post(self, request):
