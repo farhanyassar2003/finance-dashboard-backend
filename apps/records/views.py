@@ -1,5 +1,3 @@
-from django.shortcuts import get_object_or_404
-
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -7,7 +5,12 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import NotFound
 
 from .models import Record
-from .serializers import RecordSerializer,RecordFilterSerializer
+from .serializers import (
+    RecordSerializer,
+    RecordFilterSerializer,
+    RecordCreateSerializer,
+    RecordUpdateSerializer,
+)
 from apps.users.permissions import IsRecordAccessPermission
 
 
@@ -58,9 +61,9 @@ class RecordListCreateView(APIView):
         )
 
     def post(self, request):
-        serializer = RecordSerializer(
+        serializer = RecordCreateSerializer(
             data=request.data,
-            context={"request": request}
+            context={"request": request},
         )
         serializer.is_valid(raise_exception=True)
         record = serializer.save()
@@ -73,6 +76,7 @@ class RecordListCreateView(APIView):
             },
             status=status.HTTP_201_CREATED,
         )
+
 
 class RecordDetailView(APIView):
     permission_classes = [IsAuthenticated, IsRecordAccessPermission]
@@ -102,37 +106,37 @@ class RecordDetailView(APIView):
 
     def put(self, request, pk):
         record = self.get_object(pk, request.user)
-        serializer = RecordSerializer(
+        serializer = RecordUpdateSerializer(
             record,
             data=request.data,
             context={"request": request},
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        updated_record = serializer.save()
 
         return Response(
             {
                 "message": "Record updated successfully.",
-                "data": serializer.data,
+                "data": RecordSerializer(updated_record).data,
             },
             status=status.HTTP_200_OK,
         )
 
     def patch(self, request, pk):
         record = self.get_object(pk, request.user)
-        serializer = RecordSerializer(
+        serializer = RecordUpdateSerializer(
             record,
             data=request.data,
             partial=True,
             context={"request": request},
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        updated_record = serializer.save()
 
         return Response(
             {
                 "message": "Record partially updated successfully.",
-                "data": serializer.data,
+                "data": RecordSerializer(updated_record).data,
             },
             status=status.HTTP_200_OK,
         )
