@@ -20,6 +20,13 @@ class UserListSerializer(serializers.ModelSerializer):
 class UpdateUserRoleSerializer(serializers.Serializer):
     role = serializers.ChoiceField(choices=User.ROLE_CHOICES)
     
+class UserListFilterSerializer(serializers.Serializer):
+    username = serializers.CharField(required=False)
+    role = serializers.ChoiceField(choices=User.ROLE_CHOICES, required=False)
+    department = serializers.ChoiceField(choices=User.DEPARTMENT_CHOICES, required=False)
+    is_active = serializers.BooleanField(required=False)
+    
+    
 class AdminCreateUserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=8)
     confirm_password = serializers.CharField(write_only=True, min_length=8)
@@ -58,9 +65,9 @@ class AdminCreateUserSerializer(serializers.ModelSerializer):
     def validate_username(self, value):
         value = value.strip()
 
-        if len(value) < 3:
+        if len(value) < 4:
             raise serializers.ValidationError(
-                "Username must be at least 3 characters long."
+                "Username must be at least 4 characters long."
             )
 
         if User.objects.filter(username__iexact=value).exists():
@@ -104,10 +111,19 @@ class AdminCreateUserSerializer(serializers.ModelSerializer):
         return value
 
     def validate(self, attrs):
+        extra_fields = set(self.initial_data.keys()) - set(self.fields.keys())
+        if extra_fields:
+            raise serializers.ValidationError({
+                "extra_fields": [
+                    f"Unexpected fields: {', '.join(extra_fields)}"
+                ]
+            })
+
         if attrs["password"] != attrs["confirm_password"]:
             raise serializers.ValidationError(
                 {"confirm_password": ["Passwords do not match."]}
             )
+
         return attrs
 
     def create(self, validated_data):

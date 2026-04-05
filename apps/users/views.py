@@ -7,7 +7,7 @@ from rest_framework import status
 from rest_framework.exceptions import PermissionDenied
 
 from .permissions import IsAdminRole
-from .serializers import UserListSerializer, UpdateUserRoleSerializer,AdminCreateUserSerializer
+from .serializers import UserListSerializer, UpdateUserRoleSerializer,AdminCreateUserSerializer,UserListFilterSerializer
 
 User = get_user_model()
 
@@ -16,7 +16,24 @@ class UserListView(APIView):
     permission_classes = [IsAdminRole]
 
     def get(self, request):
+        filter_serializer = UserListFilterSerializer(data=request.query_params)
+        filter_serializer.is_valid(raise_exception=True)
+
+        filters = filter_serializer.validated_data
         users = User.objects.all()
+
+        if "username" in filters:
+            users = users.filter(username__icontains=filters["username"])
+
+        if "role" in filters:
+            users = users.filter(role=filters["role"])
+
+        if "department" in filters:
+            users = users.filter(department=filters["department"])
+
+        if "is_active" in filters:
+            users = users.filter(is_active=filters["is_active"])
+
         serializer = UserListSerializer(users, many=True)
 
         return Response(
