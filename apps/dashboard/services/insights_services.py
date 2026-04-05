@@ -1,7 +1,7 @@
 from decimal import Decimal
 
 from django.db.models import Avg, Case, DecimalField, Sum, When
-from django.db.models.functions import TruncMonth
+from django.db.models.functions import TruncMonth,TruncWeek
 from rest_framework.exceptions import ValidationError
 
 from apps.records.models import Record
