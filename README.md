@@ -116,11 +116,26 @@ Analytics logic is implemented using:
 ### Register User
 `POST /api/register/`
 
+**Validations:**
+- First and last names must contain only letters.
+- Username must be alphanumeric with underscores, between 4-150 characters.
+- Username and email uniqueness checks.
+- Strong password policy: Minimum 8 characters, at least one uppercase, one lowercase, one number, and one special character. No spaces allowed.
+- Password mismatch rejection.
+- Role and department assignment blocked during registration.
+- Strict invalid-field rejection.
+
 New users are assigned the default role: `viewer`.
 Role assignment can only be modified through admin APIs.
 
 ### Login
 `POST /api/login/`
+
+**Validations:**
+- Username and password are required.
+- Strict invalid-field rejection.
+- Validates user existence and password correctness.
+- Inactive-user login blocking.
 
 Returns:
 - user details
@@ -222,10 +237,22 @@ Base path: `/api/users/`
 *Note: Admins cannot change their own role or deactivate their own account.*
 
 ### User Filtering
-Supported filters:
+Supported filters: `role`, `department`, `is_active`, `username`
+
+Examples:
 - `/api/users/?role=analyst`
 - `/api/users/?department=finance`
 - `/api/users/?is_active=true`
+- `/api/users/?username=john`
+
+### User Validations
+- First name and last name must contain only letters if provided.
+- Username must be at least 4 characters long.
+- Duplicate username and email prevention.
+- Strong password policy: Must contain uppercase, lowercase, number, special character, and no spaces.
+- Passwords mismatch rejection.
+- Admin role restriction: Admins cannot change their own role or deactivate their own account.
+- Strict invalid-field rejection.
 
 ---
 
@@ -267,7 +294,15 @@ Supported filters: `category`, `record_type`, `date`, `start_date`, `end_date`, 
 
 Example: `/api/records/?category=food&record_type=expense`
 
-Includes: strict validation, duplicate prevention, ownership protection, future-date blocking, invalid-field rejection.
+### Records Validations
+- **Title**: Cannot be empty.
+- **Amount**: Must be greater than 0.
+- **Date**: Future-date blocking (cannot be in the future).
+- **Ownership protection**: Changing record ownership is not allowed. Read-only fields cannot be altered.
+- **Duplicate prevention**: Cannot create duplicate records with the exact same details for a user.
+- **Admin-only creation**: Requires target user `username` which must exist.
+- **Filter validation**: `start_date` <= `end_date`, `amount_min` / `max` >= 0, `amount_min` <= `amount_max`.
+- **Invalid-field rejection**: Strict validation rejecting any unallowed parameters.
 
 ---
 
@@ -298,7 +333,12 @@ Provides:
 - `category_breakdown`, `monthly_trend`, `weekly_trend`
 - `recent_transactions`
 
-Supports filters: `start_date`, `end_date`  
+**Supported filters:** `start_date`, `end_date`  
+
+**Validations:**
+- `start_date` cannot be greater than `end_date`.
+- Strict invalid-field rejection.
+
 Implemented using: `DashboardService`
 
 ---
@@ -312,9 +352,14 @@ Provides:
 - `total_expense`, `average_expense`, `monthly_trend`, `weekly_trend`
 - `category_breakdown`, `top_expense_categories`
 
-Supported filters:
+**Supported filters:**
 - `start_date`, `end_date`, `category`, `record_type`
 - `username` (admin only)
+
+**Validations:**
+- `start_date` cannot be greater than `end_date`.
+- Username formatting (strips spaces and validates input).
+- Strict invalid-field rejection.
 
 Implemented using: `InsightsService`
 
