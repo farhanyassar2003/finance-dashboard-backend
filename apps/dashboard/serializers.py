@@ -20,23 +20,32 @@ class DashboardFilterSerializer(serializers.Serializer):
 
 class DashboardSummarySerializer(serializers.Serializer):
     total_records = serializers.IntegerField(read_only=True)
+
     total_income = serializers.DecimalField(
         max_digits=12,
         decimal_places=2,
         read_only=True,
     )
+
     total_expense = serializers.DecimalField(
         max_digits=12,
         decimal_places=2,
         read_only=True,
     )
+
     balance = serializers.DecimalField(
         max_digits=12,
         decimal_places=2,
         read_only=True,
     )
+
     category_breakdown = serializers.DictField(read_only=True)
+
     monthly_trend = serializers.ListField(read_only=True)
+
+    weekly_trend = serializers.ListField(read_only=True)
+
+    recent_transactions = serializers.ListField(read_only=True)
 
 
 class RecentTransactionSerializer(serializers.ModelSerializer):

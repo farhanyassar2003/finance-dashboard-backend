@@ -130,7 +130,39 @@ class InsightsService:
             }
             for item in monthly_data
         ]
+    
+    @staticmethod
+    def get_weekly_trend(records):
+        weekly_data = (
+            records.annotate(week=TruncWeek("date"))
+            .values("week")
+            .annotate(
+                income=Sum(
+                    Case(
+                        When(record_type="income", then="amount"),
+                        default=Decimal("0.00"),
+                        output_field=DecimalField(max_digits=12, decimal_places=2),
+                    )
+                ),
+                expense=Sum(
+                    Case(
+                        When(record_type="expense", then="amount"),
+                        default=Decimal("0.00"),
+                        output_field=DecimalField(max_digits=12, decimal_places=2),
+                    )
+                ),
+            )
+            .order_by("week")
+        )
 
+        return [
+            {
+                "week": item["week"].strftime("%Y-%m-%d") if item["week"] else None,
+                "income": item["income"] or Decimal("0.00"),
+                "expense": item["expense"] or Decimal("0.00"),
+            }
+            for item in weekly_data
+        ]
     @classmethod
     def get_top_expense_categories(cls, records):
         top_categories = (
@@ -158,6 +190,7 @@ class InsightsService:
             "total_records": summary_data["total_records"],
             "balance": summary_data["balance"],
             "monthly_trend": cls.get_monthly_trend(records),
+            "weekly_trend": cls.get_weekly_trend(records),
         }
 
         if record_type != "expense":

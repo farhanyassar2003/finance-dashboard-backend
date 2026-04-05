@@ -1,6 +1,6 @@
 from decimal import Decimal
 from django.db.models import Sum
-from django.db.models.functions import TruncMonth
+from django.db.models.functions import TruncMonth,TruncWeek
 
 from apps.records.models import Record
 from apps.dashboard.serializers import RecentTransactionSerializer
@@ -11,7 +11,15 @@ class DashboardService:
 
     @classmethod
     def get_filtered_records(cls, user, validated_data):
-        records = Record.objects.filter(user=user)
+        username = validated_data.get("username")
+
+        if user.role == "admin":
+            records = Record.objects.all()
+
+            if username:
+                records = records.filter(user__username__iexact=username)
+        else:
+            records = Record.objects.filter(user=user)
 
         start_date = validated_data.get("start_date")
         end_date = validated_data.get("end_date")
@@ -83,6 +91,36 @@ class DashboardService:
                 monthly_data[month_key]["expense"] = item["total"] or Decimal("0.00")
 
         return list(monthly_data.values())
+    
+    @staticmethod
+    def get_weekly_trend(records):
+
+        trend_queryset = (
+            records.annotate(week=TruncWeek("date"))
+            .values("week", "record_type")
+            .annotate(total=Sum("amount"))
+            .order_by("week")
+        )
+
+        weekly_data = {}
+
+        for item in trend_queryset:
+            week_key = item["week"].strftime("%Y-%m-%d")
+
+            if week_key not in weekly_data:
+                weekly_data[week_key] = {
+                    "week": week_key,
+                    "income": Decimal("0.00"),
+                    "expense": Decimal("0.00"),
+                }
+
+            if item["record_type"] == "income":
+                weekly_data[week_key]["income"] = item["total"] or Decimal("0.00")
+
+            elif item["record_type"] == "expense":
+                weekly_data[week_key]["expense"] = item["total"] or Decimal("0.00")
+
+        return list(weekly_data.values())
 
     @classmethod
     def get_recent_transactions(cls, records):
@@ -100,5 +138,6 @@ class DashboardService:
             **cls.get_summary_data(records),
             "category_breakdown": cls.get_category_breakdown(records),
             "monthly_trend": cls.get_monthly_trend(records),
+            "weekly_trend": cls.get_weekly_trend(records),
             "recent_transactions": cls.get_recent_transactions(records),
         }
