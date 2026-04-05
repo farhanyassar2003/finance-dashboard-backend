@@ -338,10 +338,15 @@ Provides:
 
 **Supported filters:** `start_date`, `end_date`, `username` (admin only)
 
-**Access behavior:**
-- `viewer` and `analyst` can view only their own dashboard data
-- `admin` can view system-wide dashboard analytics
-- `admin` can optionally filter dashboard data by `username`
+---
+
+## Role-Based Dashboard Scope
+
+| Role | Data Scope |
+|------|-----------|
+| **Viewer** | Own summary |
+| **Analyst** | Own summary |
+| **Admin** | System-wide summary |
 
 **Validations:**
 - `start_date` cannot be greater than `end_date`
@@ -387,16 +392,6 @@ Implemented using: `InsightsService`
 
 Dashboard is designed for monitoring.  
 Insights is designed for deeper analysis.
-
----
-
-## Role-Based Dashboard Scope
-
-| Role | Data Scope |
-|------|-----------|
-| **Viewer** | Own summary |
-| **Analyst** | Own summary |
-| **Admin** | System-wide summary |
 
 ---
 
