@@ -134,6 +134,45 @@ user.is_active == True
 
 on every request.
 
+## Global Exception Handling
+
+The project uses a centralized global exception handling mechanism to ensure consistent error responses across all API endpoints.
+
+A custom exception handler is used to process:
+
+- validation errors
+- authentication failures
+- permission errors
+- object-not-found errors
+- unexpected server exceptions
+
+Instead of returning default framework error responses, the system returns a standardized response structure:
+
+```json
+{
+  "message": "Request failed.",
+  "errors": {
+    "detail": "You do not have permission to perform this action."
+  }
+}
+
+For validation errors, field-level details are returned inside the errors object:
+
+{
+  "message": "Request failed.",
+  "errors": {
+    "username": ["This field may not be blank."]
+  }
+}
+
+This improves:
+
+API response consistency
+frontend integration
+debugging clarity
+maintainability
+separation of concerns
+
 ---
 
 ## User Management
