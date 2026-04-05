@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import NotFound
-from .pagination import RecordPagination
+from config.pagination import StandardPagination
 
 from .models import Record
 from .serializers import (
@@ -56,16 +56,14 @@ class RecordListCreateView(APIView):
 
         records = self.apply_filters(records, filters)
 
-        paginator = RecordPagination()
+        paginator = StandardPagination()
         paginated_records = paginator.paginate_queryset(records, request)
 
         serializer = RecordSerializer(paginated_records, many=True)
 
         return paginator.get_paginated_response(
-            {
-                "message": "Records fetched successfully.",
-                "data": serializer.data,
-            }
+            serializer.data,
+            message="Records fetched successfully."
         )
 
     def post(self, request):
