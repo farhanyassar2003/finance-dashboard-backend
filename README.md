@@ -62,7 +62,7 @@ Analytics logic is implemented using:
 - DashboardService
 - InsightsService
 
-This ensures clean separation between request handling and business logic.
+Insights functionality is implemented inside the dashboard module instead of a separate Django app because it represents an extension of analytics logic rather than an independent domain component. This avoids unnecessary application fragmentation while keeping aggregation logic modular through a dedicated service layer.
 
 ---
 
@@ -79,20 +79,48 @@ This ensures clean separation between request handling and business logic.
 | Validation | Serializer-based validation |
 
 ---
+## Local Setup Instructions
+
+Clone the repository:
+
+git clone https://github.com/<your-username>/finance-dashboard-backend.git
+
+Navigate into the project directory:
+
+cd finance-dashboard-backend
+
+Create virtual environment:
+
+python -m venv venv
+
+Activate environment (Windows):
+
+venv\Scripts\activate
+
+Install dependencies:
+
+pip install -r requirements.txt
+
+Run database migrations:
+
+python manage.py migrate
+
+Start development server:
+
+python manage.py runserver
+
+---
 
 ## Authentication Flow
 
 ### Register User
 POST /api/register/
 
-New users are assigned default role:
-
-Role assignment is handled only through admin APIs.
+New users are assigned the default role:
 
 viewer
 
-
-Role assignment is handled only through admin APIs.
+Role assignment can only be modified through admin APIs.
 
 ---
 
@@ -174,6 +202,7 @@ maintainability
 separation of concerns
 
 ---
+
 
 ## User Management
 
@@ -348,7 +377,25 @@ Examples:
 
 
 ---
+## Pagination Support
 
+Pagination is implemented using a reusable StandardPagination class shared across list endpoints.
+
+Pagination is currently applied to:
+
+- /api/records/
+- /api/users/
+
+Supported query parameters:
+
+?page=1
+?page_size=10
+
+Example:
+
+GET /api/users/?role=analyst&page=1
+
+---
 ## Dashboard Summary API
 
 Endpoint:
@@ -478,7 +525,7 @@ Insights is designed for deeper analysis.
 
 | Decision | Reason |
 |---------|--------|
-| SQLite used | sufficient for assignment scope |
+| SQLite used | selected for simplicity and quick local setup; architecture supports migration to PostgreSQL without structural changes
 | Admin-only record creation | preserves data integrity |
 | Refresh-token endpoint omitted | simplifies auth lifecycle |
 | Insights separated from dashboard logic | improves analytics clarity |
@@ -496,6 +543,7 @@ Possible enhancements:
 - soft delete for records
 - automated tests
 - production deployment configuration
+- Pagination can be introduced for recent_transactions in the Dashboard API if the transaction window is expanded beyond the current fixed-size summary response.
 
 ---
 
