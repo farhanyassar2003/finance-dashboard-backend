@@ -224,6 +224,16 @@ Extends Django `AbstractUser` with:
 **Role Choices:** `viewer`, `analyst`, `admin`  
 **Department Choices:** `finance`, `operations`, `marketing`, `hr`
 
+### Role Assignment Rules
+
+The system follows a strict role-based access control (RBAC) structure:
+
+- Users registered through the public registration endpoint are automatically assigned the default role `viewer`.
+- Only administrators can promote users to `analyst` or `admin` using dedicated role-management APIs.
+- Superusers created using Django’s `createsuperuser` command are automatically assigned the `admin` role to maintain consistency with the system’s access control design.
+
+This ensures predictable privilege control and prevents unauthorized role escalation during registration.
+
 ### User Management Endpoints
 Base path: `/api/users/`
 
