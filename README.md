@@ -336,7 +336,7 @@ Provides:
 - `category_breakdown`, `monthly_trend`, `weekly_trend`
 - `recent_transactions` (latest 5 transactions ordered by date)
 
-**Supported filters:** `start_date`, `end_date`, `username` (admin only)
+**Supported filters:** `start_date`, `end_date`, `username`(admin only)
 
 
 ## Role-Based Dashboard Scope
