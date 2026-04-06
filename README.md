@@ -50,8 +50,7 @@ The backend follows a modular app-based architecture:
 - `authentication` → login & registration
 - `users` → role management
 - `records` → financial CRUD operations
-- `dashboard` → summary analytics
-- `insights` → advanced analytics
+- `dashboard` → summary analytics and insights analytics
 - `services` → aggregation logic layer
 - `permissions` → reusable authorization rules
 
@@ -59,7 +58,7 @@ Analytics logic is implemented using:
 - `DashboardService`
 - `InsightsService`
 
-*Note: Insights functionality is implemented inside the dashboard module instead of a separate Django app because it represents an extension of analytics logic rather than an independent domain component. This avoids unnecessary application fragmentation while keeping aggregation logic modular through a dedicated service layer.*
+*Note: Insights functionality is implemented inside the dashboard module instead of a separate Django app because it represents an extension of analytics logic rather than an independent domain component.*
 
 ---
 
@@ -464,7 +463,6 @@ The backend includes several design decisions beyond the core assignment require
 ## Future Improvements
 
 Possible enhancements:
-- Refresh-token endpoint
 - Swagger/OpenAPI documentation
 - Analytics caching (Redis)
 - Search support for users
