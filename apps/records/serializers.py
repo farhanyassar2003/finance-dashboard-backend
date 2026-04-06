@@ -241,6 +241,8 @@ class RecordFilterSerializer(serializers.Serializer):
             "end_date",
             "amount_min",
             "amount_max",
+            "page",
+            "page_size",
         }
 
         errors = {}

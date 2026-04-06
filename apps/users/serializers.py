@@ -23,8 +23,23 @@ class UpdateUserRoleSerializer(serializers.Serializer):
 class UserListFilterSerializer(serializers.Serializer):
     username = serializers.CharField(required=False)
     role = serializers.ChoiceField(choices=User.ROLE_CHOICES, required=False)
-    department = serializers.ChoiceField(choices=User.DEPARTMENT_CHOICES, required=False)
+    department = serializers.ChoiceField(
+        choices=User.DEPARTMENT_CHOICES,
+        required=False
+    )
     is_active = serializers.BooleanField(required=False, allow_null=True)
+    page = serializers.IntegerField(required=False, min_value=1)
+    page_size = serializers.IntegerField(required=False, min_value=1)
+
+    def validate(self, attrs):
+        extra_fields = set(self.initial_data.keys()) - set(self.fields.keys())
+        if extra_fields:
+            raise serializers.ValidationError({
+                "extra_fields": [
+                    f"Unexpected fields: {', '.join(extra_fields)}"
+                ]
+            })
+        return attrs
     
     
 class AdminCreateUserSerializer(serializers.ModelSerializer):

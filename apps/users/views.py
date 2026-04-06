@@ -15,7 +15,7 @@ User = get_user_model()
 
 
 class UserListView(APIView):
-    permission_classes = [IsAdminRole,IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsAdminRole]
 
     def get(self, request):
         filter_serializer = UserListFilterSerializer(data=request.query_params)

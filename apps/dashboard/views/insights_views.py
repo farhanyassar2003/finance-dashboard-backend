@@ -9,6 +9,9 @@ from apps.dashboard.services.insights_services import InsightsService
 
 
 class InsightsView(APIView):
+    """
+    Returns filtered financial insights for analysts and admins.
+    """
     permission_classes = [IsAuthenticated, IsAnalystOrAdmin]
 
     def get(self, request):

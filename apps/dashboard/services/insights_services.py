@@ -81,11 +81,7 @@ class InsightsService:
             "total_records": records.count(),
             "total_income": total_income,
             "total_expense": total_expense,
-            "balance": (
-                total_income - total_expense
-                if total_income and total_expense
-                else Decimal("0.00")
-            )
+            "balance": total_income - total_expense
             
         }
 

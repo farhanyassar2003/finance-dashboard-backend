@@ -16,6 +16,10 @@ from apps.users.permissions import IsRecordAccessPermission
 
 
 class RecordListCreateView(APIView):
+    
+    """
+    Handles listing filtered records and admin-only record creation.
+    """
     permission_classes = [IsAuthenticated, IsRecordAccessPermission]
 
     def get_queryset(self, request):

@@ -1,12 +1,19 @@
+from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
-from rest_framework import status
+
 
 from .serializers import RegisterSerializer,LoginSerializer
 
 
 class RegisterView(APIView):
+    
+    """
+    Public endpoint for registering a new user.
+    Newly registered users are assigned the default 'viewer' role.
+    """
+
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -32,6 +39,10 @@ class RegisterView(APIView):
     )
 
 class LoginView(APIView):
+    
+    """
+    Public endpoint for authenticating a user and returning JWT tokens.
+    """ 
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -43,17 +54,19 @@ class LoginView(APIView):
         return Response(
             {
                 "message": "Login successful.",
-                "user": {
-                    "id": user.id,
-                    "username": user.username,
-                    "email": user.email,
-                    "role": user.role,
-                    "department": user.department,
-                    "is_active": user.is_active,
-                },
-                "tokens": {
-                    "refresh": serializer.validated_data["refresh"],
-                    "access": serializer.validated_data["access"],
+                "data": {
+                    "user": {
+                        "id": user.id,
+                        "username": user.username,
+                        "email": user.email,
+                        "role": user.role,
+                        "department": user.department,
+                        "is_active": user.is_active,
+                    },
+                    "tokens": {
+                        "refresh": serializer.validated_data["refresh"],
+                        "access": serializer.validated_data["access"],
+                    },
                 },
             },
             status=status.HTTP_200_OK,

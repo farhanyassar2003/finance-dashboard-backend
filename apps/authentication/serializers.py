@@ -1,4 +1,4 @@
-from django.contrib.auth import get_user_model,authenticate
+from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
 import re
@@ -6,8 +6,8 @@ import re
 User=get_user_model()
 
 class RegisterSerializer(serializers.ModelSerializer):
-    first_name = serializers.CharField(required=True, allow_blank=True, max_length=150)
-    last_name = serializers.CharField(required=True, allow_blank=True, max_length=150)
+    first_name = serializers.CharField(required=True, allow_blank=False, max_length=150)
+    last_name = serializers.CharField(required=True, allow_blank=False, max_length=150)
     username = serializers.CharField(required=True, max_length=150)
     email = serializers.EmailField(required=True)
     password = serializers.CharField(write_only=True, min_length=8, required=True)
@@ -27,7 +27,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def validate_first_name(self, value):
         value = value.strip()
-        if value and not value.replace(" ", "").isalpha():
+        if not value.replace(" ", "").isalpha():
             raise serializers.ValidationError(
                 "First name should contain only letters."
             )
@@ -35,7 +35,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def validate_last_name(self, value):
         value = value.strip()
-        if value and not value.replace(" ", "").isalpha():
+        if not value.replace(" ", "").isalpha():
             raise serializers.ValidationError(
                 "Last name should contain only letters."
             )
@@ -45,7 +45,9 @@ class RegisterSerializer(serializers.ModelSerializer):
         value = value.strip()
 
         if not value:
-            raise serializers.ValidationError("Username is required.")
+            raise serializers.ValidationError(
+                "Username is required."
+            )
 
         if len(value) < 4:
             raise serializers.ValidationError(
@@ -63,24 +65,27 @@ class RegisterSerializer(serializers.ModelSerializer):
             )
 
         if User.objects.filter(username__iexact=value).exists():
-            raise serializers.ValidationError("This username is already taken.")
+            raise serializers.ValidationError(
+                "This username is already taken."
+            )
 
         return value
 
     def validate_email(self, value):
         value = value.strip().lower()
 
-        if not value:
-            raise serializers.ValidationError("Email is required.")
-
         if User.objects.filter(email__iexact=value).exists():
-            raise serializers.ValidationError("This email is already registered.")
+            raise serializers.ValidationError(
+                "This email is already registered."
+            )
 
         return value
 
     def validate_password(self, value):
         if " " in value:
-            raise serializers.ValidationError("Password should not contain spaces.")
+            raise serializers.ValidationError(
+                "Password should not contain spaces."
+            )
 
         if not re.search(r"[A-Z]", value):
             raise serializers.ValidationError(
@@ -119,7 +124,6 @@ class RegisterSerializer(serializers.ModelSerializer):
 
         allowed_fields = set(self.fields.keys())
         received_fields = set(self.initial_data.keys())
-
         extra_fields = received_fields - allowed_fields - {"role", "department"}
 
         if extra_fields:
@@ -127,28 +131,25 @@ class RegisterSerializer(serializers.ModelSerializer):
                 {field: ["This field is not allowed."] for field in extra_fields}
             )
 
-        password = attrs.get("password")
-        confirm_password = attrs.get("confirm_password")
-
-        if password != confirm_password:
+        if attrs.get("password") != attrs.get("confirm_password"):
             errors["confirm_password"] = ["Passwords do not match."]
 
         if errors:
             raise serializers.ValidationError(errors)
 
         return attrs
+
     def create(self, validated_data):
         validated_data.pop("confirm_password", None)
 
-        user = User.objects.create_user(
+        return User.objects.create_user(
             username=validated_data["username"].strip(),
             email=validated_data["email"].strip().lower(),
             password=validated_data["password"],
-            first_name=validated_data.get("first_name", "").strip(),
-            last_name=validated_data.get("last_name", "").strip(),
+            first_name=validated_data["first_name"].strip(),
+            last_name=validated_data["last_name"].strip(),
             role="viewer",
         )
-        return user
     
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField(required=True)
@@ -161,10 +162,7 @@ class LoginSerializer(serializers.Serializer):
 
         if extra_fields:
             raise serializers.ValidationError(
-                {
-                    field: ["This field is not allowed."]
-                    for field in extra_fields
-                }
+                {field: ["This field is not allowed."] for field in extra_fields}
             )
 
         username = attrs.get("username", "").strip()
