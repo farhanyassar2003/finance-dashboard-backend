@@ -206,7 +206,7 @@ For validation errors, field-level details are returned inside the `errors` obje
 
 This improves:
 - API response consistency
-- Frontend integration
+- Frontend integrations
 - Debugging clarity
 - Maintainability
 - Separation of concerns
