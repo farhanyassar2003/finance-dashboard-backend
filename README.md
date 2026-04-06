@@ -50,8 +50,7 @@ The backend follows a modular app-based architecture:
 - `authentication` → login & registration
 - `users` → role management
 - `records` → financial CRUD operations
-- `dashboard` → summary analytics
-- `insights` → advanced analytics
+- `dashboard` → summary analytics and insights analytics
 - `services` → aggregation logic layer
 - `permissions` → reusable authorization rules
 
@@ -59,7 +58,7 @@ Analytics logic is implemented using:
 - `DashboardService`
 - `InsightsService`
 
-*Note: Insights functionality is implemented inside the dashboard module instead of a separate Django app because it represents an extension of analytics logic rather than an independent domain component. This avoids unnecessary application fragmentation while keeping aggregation logic modular through a dedicated service layer.*
+*Note: Insights functionality is implemented inside the dashboard module instead of a separate Django app because it represents an extension of analytics logic rather than an independent domain component.*
 
 ---
 
@@ -153,8 +152,14 @@ Authorization: Bearer <access_token>
 
 | Token | Purpose | Lifetime |
 |------|---------|----------|
-| **Access Token** | Access protected endpoints | 5 hours |
-| **Refresh Token** | Reserved for renewal support | 1 day |
+| **Access Token** | Access protected endpoints | 15 minutes |
+| **Refresh Token** | Used to generate a new access token without re-login | 7 day |
+
+A refresh endpoint is available:
+
+`POST /api/token/refresh/`
+
+This endpoint accepts a refresh token and returns a new access token when the previous access token expires.
 
 Inactive users cannot access protected APIs even if their token has not expired.
 
@@ -431,10 +436,10 @@ Insights is designed for deeper analytical exploration of financial patterns and
 
 | Decision | Reason |
 |---------|--------|
-| **SQLite used** | Selected for simplicity and quick local setup; architecture supports migration to PostgreSQL without structural changes. |
-| **Admin-only record creation** | Preserves data integrity. |
-| **Refresh-token endpoint omitted** | Simplifies auth lifecycle. |
-| **Insights separated from dashboard logic**| Insights implemented using a dedicated service layer instead of a separate Django app to keep analytics modular    without unnecessary application fragmentation. |
+| **SQLite used** | Selected for simplicity and quick local setup; the architecture supports migration to PostgreSQL without major structural changes. |
+| **Admin-only record creation and modification** | Improves financial data integrity, though it reduces flexibility for non-admin users. |
+| **JWT refresh support using SimpleJWT** | Improves session continuity for users, while adding a small amount of authentication flow complexity. |
+| **Insights separated from dashboard logic** | Avoids unnecessary Django app fragmentation while still keeping analytics logic modular through a dedicated service layer. |
 
 ---
 
@@ -458,7 +463,6 @@ The backend includes several design decisions beyond the core assignment require
 ## Future Improvements
 
 Possible enhancements:
-- Refresh-token endpoint
 - Swagger/OpenAPI documentation
 - Analytics caching (Redis)
 - Search support for users
@@ -466,6 +470,9 @@ Possible enhancements:
 - Automated tests
 - Production deployment configuration
 - Pagination can be introduced for `recent_transactions` in the Dashboard API if the transaction window is expanded beyond the current fixed-size summary response.
+- Add API versioning support (e.g., /api/v1/) for backward compatibility
+- Introduce background task processing (e.g., Celery) for scalable analytics computation
+- Add database indexing on frequently filtered fields such as date, category, and record_type to improve query performance
 
 ---
 
